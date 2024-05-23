@@ -16,14 +16,18 @@ contract NftSwap is ERC721Holder {
     bool public receivedNftTo;
     address public toDepositor;
 
-    constructor(IERC721 _nftFrom, uint256 _tokenIdFrom, IERC721 _nftTo, uint256 _tokenIdTo) {
+    uint256 public expiry;
+
+    constructor(IERC721 _nftFrom, uint256 _tokenIdFrom, IERC721 _nftTo, uint256 _tokenIdTo, uint256 _expiry) {
         nftFrom = _nftFrom;
         tokenIdFrom = _tokenIdFrom;
         nftTo = _nftTo;
         tokenIdTo = _tokenIdTo;
+        expiry = _expiry;
     }
 
     function onERC721Received(address, address from, uint256 tokenId, bytes memory) public override returns (bytes4) {
+        _mustNotBeExpired();
         _mustBeCorrectNftContract();
         _mustHaveNft(IERC721(msg.sender), tokenId);
 
@@ -40,6 +44,25 @@ contract NftSwap is ERC721Holder {
         return this.onERC721Received.selector;
     }
 
+    function cancel() public {
+        _mustBeExpired();
+        _mustNotHaveReceivedAllNfts();
+
+        if (receivedNftFrom) {
+            nftFrom.safeTransferFrom(address(this), fromDepositor, tokenIdFrom);
+        }
+
+        if (receivedNftTo) {
+            nftTo.safeTransferFrom(address(this), toDepositor, tokenIdTo);
+        }
+    }
+
+    function _mustNotBeExpired() internal view {
+        if (block.number > expiry) {
+            revert Expired();
+        }
+    }
+
     function _mustBeCorrectNftContract() internal view {
         if (msg.sender != address(nftFrom) && msg.sender != address(nftTo)) {
             revert ExpectedToBeFromOrToNft(msg.sender);
@@ -52,6 +75,21 @@ contract NftSwap is ERC721Holder {
         }
     }
 
+    function _mustBeExpired() internal view {
+        if (block.number <= expiry) {
+            revert NotExpired();
+        }
+    }
+
+    function _mustNotHaveReceivedAllNfts() internal view {
+        if (receivedNftFrom && receivedNftTo) {
+            revert AlreadyReceivedNfts();
+        }
+    }
+
     error ExpectedToBeFromOrToNft(address nft);
     error ExpectedToHaveReceivedNft(IERC721 nft, uint256 tokenId);
+    error Expired();
+    error NotExpired();
+    error AlreadyReceivedNfts();
 }

@@ -24,7 +24,7 @@ contract NftSwapTest is Test {
 
     function setUp() public {
         nft = new QuickNft();
-        swap = new NftSwap(nft, 0, nft, 1);
+        swap = new NftSwap(nft, 0, nft, 1, 1000);
 
         nft.mint(alice, 0);
         nft.mint(bob, 1);
@@ -46,6 +46,51 @@ contract NftSwapTest is Test {
         assertEq(swap.toDepositor(), bob);
     }
 
+    function test_cancelIfExpiredAndOnlyFromReceived() public {
+        vm.prank(alice);
+        nft.safeTransferFrom(alice, address(swap), 0);
+
+        vm.roll(swap.expiry() + 1);
+
+        swap.cancel();
+
+        assertEq(nft.ownerOf(0), alice);
+        assertEq(nft.ownerOf(1), bob);
+    }
+
+    function test_cancelIfExpiredAndOnlyToReceived() public {
+        vm.prank(bob);
+        nft.safeTransferFrom(bob, address(swap), 1);
+
+        vm.roll(swap.expiry() + 1);
+
+        swap.cancel();
+
+        assertEq(nft.ownerOf(0), alice);
+        assertEq(nft.ownerOf(1), bob);
+    }
+
+    function test_cannotCancelEarly() public {
+        vm.prank(alice);
+        nft.safeTransferFrom(alice, address(swap), 0);
+
+        vm.expectRevert(abi.encodeWithSelector(NftSwap.NotExpired.selector));
+        swap.cancel();
+    }
+
+    function test_cannotCancelIfDealFulfilled() public {
+        vm.prank(alice);
+        nft.safeTransferFrom(alice, address(swap), 0);
+
+        vm.prank(bob);
+        nft.safeTransferFrom(bob, address(swap), 1);
+
+        vm.roll(swap.expiry() + 1);
+
+        vm.expectRevert(abi.encodeWithSelector(NftSwap.AlreadyReceivedNfts.selector));
+        swap.cancel();
+    }
+
     function test_cannotReceiveUnexpectedNftContract() public {
         QuickNft anotherNft = new QuickNft();
         anotherNft.mint(alice, 0);
@@ -59,5 +104,12 @@ contract NftSwapTest is Test {
         vm.prank(address(nft));
         vm.expectRevert(abi.encodeWithSelector(NftSwap.ExpectedToHaveReceivedNft.selector, address(nft), 0));
         swap.onERC721Received(address(0), address(nft), 0, "");
+    }
+
+    function test_cannotDepositWhenExpired() public {
+        vm.roll(swap.expiry() + 1);
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(NftSwap.Expired.selector));
+        nft.safeTransferFrom(alice, address(swap), 0);
     }
 }
