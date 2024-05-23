@@ -38,7 +38,12 @@ contract NftSwapTest is Test {
         nft.safeTransferFrom(bob, address(swap), 1);
 
         assertEq(nft.ownerOf(0), address(swap));
+        assertEq(swap.receivedNftFrom(), true);
+        assertEq(swap.fromDepositor(), alice);
+
         assertEq(nft.ownerOf(1), address(swap));
+        assertEq(swap.receivedNftTo(), true);
+        assertEq(swap.toDepositor(), bob);
     }
 
     function test_cannotReceiveUnexpectedNftContract() public {

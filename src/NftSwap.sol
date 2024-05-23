@@ -9,10 +9,12 @@ contract NftSwap is ERC721Holder {
     IERC721 public nftFrom;
     uint256 public tokenIdFrom;
     bool public receivedNftFrom;
+    address public fromDepositor;
 
     IERC721 public nftTo;
     uint256 public tokenIdTo;
     bool public receivedNftTo;
+    address public toDepositor;
 
     constructor(IERC721 _nftFrom, uint256 _tokenIdFrom, IERC721 _nftTo, uint256 _tokenIdTo) {
         nftFrom = _nftFrom;
@@ -21,14 +23,16 @@ contract NftSwap is ERC721Holder {
         tokenIdTo = _tokenIdTo;
     }
 
-    function onERC721Received(address, address, uint256 tokenId, bytes memory) public override returns (bytes4) {
+    function onERC721Received(address, address from, uint256 tokenId, bytes memory) public override returns (bytes4) {
         _mustBeCorrectNftContract();
         _mustHaveNft(IERC721(msg.sender), tokenId);
 
         if (msg.sender == address(nftFrom) && tokenId == tokenIdFrom) {
             receivedNftFrom = true;
+            fromDepositor = from;
         } else if (msg.sender == address(nftTo) && tokenId == tokenIdTo) {
             receivedNftTo = true;
+            toDepositor = from;
         } else {
             revert("unreachable");
         }
