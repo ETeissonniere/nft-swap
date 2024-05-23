@@ -24,16 +24,35 @@ contract NftSwapTest is Test {
 
     function setUp() public {
         nft = new QuickNft();
-        swap = new NftSwap();
+        swap = new NftSwap(nft, 0, nft, 1);
 
         nft.mint(alice, 0);
         nft.mint(bob, 1);
     }
 
-    function test_canReceiveNft() public {
+    function test_canReceiveNfts() public {
         vm.prank(alice);
         nft.safeTransferFrom(alice, address(swap), 0);
 
+        vm.prank(bob);
+        nft.safeTransferFrom(bob, address(swap), 1);
+
         assertEq(nft.ownerOf(0), address(swap));
+        assertEq(nft.ownerOf(1), address(swap));
+    }
+
+    function test_cannotReceiveUnexpectedNftContract() public {
+        QuickNft anotherNft = new QuickNft();
+        anotherNft.mint(alice, 0);
+
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(NftSwap.ExpectedToBeFromOrToNft.selector, address(anotherNft)));
+        anotherNft.safeTransferFrom(alice, address(swap), 0);
+    }
+
+    function test_doesNotActuallyTrustBadNftContract() public {
+        vm.prank(address(nft));
+        vm.expectRevert(abi.encodeWithSelector(NftSwap.ExpectedToHaveReceivedNft.selector, address(nft), 0));
+        swap.onERC721Received(address(0), address(nft), 0, "");
     }
 }
