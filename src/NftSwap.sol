@@ -2,14 +2,10 @@
 
 pragma solidity ^0.8.23;
 
-contract NftSwap {
-    uint256 public number;
+import {ERC721Holder} from "openzeppelin-contracts/contracts/token/ERC721/utils/ERC721Holder.sol";
 
-    function setNumber(uint256 newNumber) public {
-        number = newNumber;
-    }
-
-    function increment() public {
-        number++;
+contract NftSwap is ERC721Holder {
+    function onERC721Received(address, address, uint256, bytes memory) public pure override returns (bytes4) {
+        return this.onERC721Received.selector;
     }
 }
