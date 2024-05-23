@@ -112,4 +112,33 @@ contract NftSwapTest is Test {
         vm.expectRevert(abi.encodeWithSelector(NftSwap.Expired.selector));
         nft.safeTransferFrom(alice, address(swap), 0);
     }
+
+    function test_finalize() public {
+        vm.prank(alice);
+        nft.safeTransferFrom(alice, address(swap), 0);
+
+        vm.prank(bob);
+        nft.safeTransferFrom(bob, address(swap), 1);
+
+        swap.finalize();
+
+        assertEq(nft.ownerOf(0), bob);
+        assertEq(nft.ownerOf(1), alice);
+    }
+
+    function test_cannotFinalizeIfMissingToToken() public {
+        vm.prank(alice);
+        nft.safeTransferFrom(alice, address(swap), 0);
+
+        vm.expectRevert(abi.encodeWithSelector(NftSwap.DidNotReceiveNft.selector, address(nft), 1));
+        swap.finalize();
+    }
+
+    function test_cannotFinalizeIfMissingFromToken() public {
+        vm.prank(bob);
+        nft.safeTransferFrom(bob, address(swap), 1);
+
+        vm.expectRevert(abi.encodeWithSelector(NftSwap.DidNotReceiveNft.selector, address(nft), 0));
+        swap.finalize();
+    }
 }

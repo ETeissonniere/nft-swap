@@ -57,6 +57,13 @@ contract NftSwap is ERC721Holder {
         }
     }
 
+    function finalize() public {
+        _mustHaveReceivedAllNfts();
+
+        nftFrom.safeTransferFrom(address(this), toDepositor, tokenIdFrom);
+        nftTo.safeTransferFrom(address(this), fromDepositor, tokenIdTo);
+    }
+
     function _mustNotBeExpired() internal view {
         if (block.number > expiry) {
             revert Expired();
@@ -87,9 +94,18 @@ contract NftSwap is ERC721Holder {
         }
     }
 
+    function _mustHaveReceivedAllNfts() internal view {
+        if (!receivedNftFrom) {
+            revert DidNotReceiveNft(nftFrom, tokenIdFrom);
+        } else if (!receivedNftTo) {
+            revert DidNotReceiveNft(nftTo, tokenIdTo);
+        }
+    }
+
     error ExpectedToBeFromOrToNft(address nft);
     error ExpectedToHaveReceivedNft(IERC721 nft, uint256 tokenId);
     error Expired();
     error NotExpired();
     error AlreadyReceivedNfts();
+    error DidNotReceiveNft(IERC721 nft, uint256 tokenId);
 }
