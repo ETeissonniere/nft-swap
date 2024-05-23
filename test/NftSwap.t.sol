@@ -1,11 +1,12 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+// SPDX-License-Identifier: MIT License
+
+pragma solidity ^0.8.23;
 
 import {Test, console} from "forge-std/Test.sol";
-import {Counter} from "../src/Counter.sol";
+import {NftSwap} from "../src/NftSwap.sol";
 
-contract CounterTest is Test {
-    Counter public counter;
+contract NftSwapTest is Test {
+    NftSwap public counter;
 
     function setUp() public {
         counter = new Counter();
