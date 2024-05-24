@@ -1,4 +1,4 @@
-# NftSwap: a simply way to swap two NFTs for each other in a fully trustless manner
+# NftSwap: a simple way to swap two NFTs for each other in a fully trustless manner
 Anybody may initiate a swap by:
 1. Deploying the contract with the desired source and destination nfts
 2. Depositing the NFTs in the contract
