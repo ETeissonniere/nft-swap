@@ -27,21 +27,29 @@ contract NftSwap is ERC721Holder {
     }
 
     function onERC721Received(address, address from, uint256 tokenId, bytes memory) public override returns (bytes4) {
-        _mustNotBeExpired();
-        _mustBeCorrectNftContract();
-        _mustHaveNft(IERC721(msg.sender), tokenId);
+        _handleERC721Received(msg.sender, from, tokenId);
+        return this.onERC721Received.selector;
+    }
 
-        if (msg.sender == address(nftFrom) && tokenId == tokenIdFrom) {
+    function depositERC721(address nftContract, uint256 tokenId) public {
+        IERC721(nftContract).safeTransferFrom(msg.sender, address(this), tokenId);
+        _handleERC721Received(nftContract, msg.sender, tokenId);
+    }
+
+    function _handleERC721Received(address nftContract, address sender, uint256 tokenId) internal {
+        _mustNotBeExpired();
+        _mustBeCorrectNftContract(nftContract);
+        _mustHaveNft(IERC721(nftContract), tokenId);
+
+        if (nftContract == address(nftFrom) && tokenId == tokenIdFrom) {
             receivedNftFrom = true;
-            fromDepositor = from;
-        } else if (msg.sender == address(nftTo) && tokenId == tokenIdTo) {
+            fromDepositor = sender;
+        } else if (nftContract == address(nftTo) && tokenId == tokenIdTo) {
             receivedNftTo = true;
-            toDepositor = from;
+            toDepositor = sender;
         } else {
             revert("unreachable");
         }
-
-        return this.onERC721Received.selector;
     }
 
     function cancel() public {
@@ -70,9 +78,9 @@ contract NftSwap is ERC721Holder {
         }
     }
 
-    function _mustBeCorrectNftContract() internal view {
-        if (msg.sender != address(nftFrom) && msg.sender != address(nftTo)) {
-            revert ExpectedToBeFromOrToNft(msg.sender);
+    function _mustBeCorrectNftContract(address nftContract) internal view {
+        if (nftContract != address(nftFrom) && nftContract != address(nftTo)) {
+            revert ExpectedToBeFromOrToNft(nftContract);
         }
     }
 

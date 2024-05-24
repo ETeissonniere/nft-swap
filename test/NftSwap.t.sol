@@ -141,4 +141,15 @@ contract NftSwapTest is Test {
         vm.expectRevert(abi.encodeWithSelector(NftSwap.DidNotReceiveNft.selector, address(nft), 0));
         swap.finalize();
     }
+
+    function test_depositERC721() public {
+        vm.startPrank(alice);
+        nft.approve(address(swap), 0);
+        swap.depositERC721(address(nft), 0);
+        vm.stopPrank();
+
+        assertEq(nft.ownerOf(0), address(swap));
+        assertEq(swap.receivedNftFrom(), true);
+        assertEq(swap.fromDepositor(), alice);
+    }
 }
